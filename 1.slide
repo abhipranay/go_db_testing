@@ -1,0 +1,111 @@
+Golang unit testing database interactions
+8 July 2021
+
+Abhipranay Chauhan
+abhipranay.chauhan@shopee.com
+
+* Agenda
+- Classist Vs Mockist
+- Why DB tests ?
+- Options for testing DB in golang
+- unit testing using go-sqlmock
+- tidb-lite
+
+* Classist Vs Mockist
+.html cvm1.html
+
+* Classist Vs Mockist ( continued ... )
+.html cvm2.html
+
+* Why test database interations ?
+
+- If database layer has non-trivial logic then we should unit test such codes
+- Test edge cases. Can your code fail if query returns no results ?
+- Test db exceptions are handled properly
+- Test transactions rollback/commit on desired conditions
+- Test custom orm or db abstraction ie test orm library or repository layer
+- Test actual query which is hitting your DB
+- Improve code coverage
+- Guide application design
+
+* Yay I write unit tests. No more bugs!!
+
+- Things can still fail
+- 100% code coverage doesn't mean 0 bugs
+- Application can fail during integration
+
+* Test Pyramid
+.image images/test_pyramid.png 500 _
+
+* Testing Microservices
+.image images/component_test.png 500 _
+
+* DB testing options in golang
+
+- Database
+.link https://github.com/DATA-DOG/go-sqlmock - go-sqlmock
+.link https://github.com/WangXiangUSTC/tidb-lite - tidb-lite
+
+- Cache
+.link https://github.com/elliotchance/redismock - redismock
+.link https://github.com/alicebob/miniredis - miniredis
+
+* go-sqlmock
+.code contracts/sqlmock.go /^//START/,/^//END/ HL12
+
+* Use Case (Cancel Order)
+- Select order for Update
+- If order is *NOT* in *PENDING* then cancellation *NOT* allowed
+- Else refund *order_value* *+* *order_reserved_fee* in user's account and mark order *CANCELLED*
+
+* Use Case ( Code )
+.code sqlmock/orders.go /^//SELECTQ/,/^//ENDSELECTQ/ HL12
+// if status pending roll back
+.code sqlmock/orders.go /^//UPDATEQ/,/^//ENDUPDATE/ HL12
+.code sqlmock/orders.go /^//CANCELLEDQ/,/^//ENDCANCELLED/ HL12
+
+* Any Idea how to test this ?
+.image images/tester.gif 500 800
+
+* Let's see some code
+
+* Should Rollback on Select Error
+.code sqlmock/orders_3_test.go /^//START/,/^//END/ HL12
+
+* When Order in *NON* *PENDING* status we should not Cancel
+.code sqlmock/orders_1_test.go /^//NEWSQLMOCK/,/^//ENDMOCK/ HL12
+.code sqlmock/orders_1_test.go /^//SETEXPECTTATIONS/,/^//ENDEXPECTATIONS/ HL12
+.code sqlmock/orders_1_test.go /^//RUNFUNC/,/^//DONEFUNC/ HL12
+
+* When Order in PENDING status
+.code sqlmock/orders_2_test.go /^//START/,/^//END/ HL12
+
+* tidb-lite
+- It is simpler
+- Compatible With MySQL Protocol
+- It creates a temporary TiDB server with mocktikv mode in your application
+- go-sqlmock doesn't have any state. So you must define each step
+
+* tidb-lite interface
+- func NewTiDBServer(options *Options) (*TiDBServer, error)
+Create a TiDB Server, can use options to set the path which used to save db's data and this server's port.
+
+- func GetTiDBServer() (*TiDBServer, error)
+Get the exist TiDB Server.
+
+- func (t *TiDBServer) CreateConn() (*sql.DB, error)
+Create a database connection.
+
+- func (t *TiDBServer) Close()
+Close TiDB Server.
+
+- func (t *TiDBServer) CloseGracefully()
+Close TiDB server gracefully.
+
+* tidb-lite example
+.code tidb/ex1_test.go /^//START/,/^//END1/ HL12
+
+* tidb-lite example ( continued...)
+.code tidb/ex1_test.go /^//START2/,/^//END2/ HL12
+
+* Q&A ?
