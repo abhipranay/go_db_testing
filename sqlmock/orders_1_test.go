@@ -18,7 +18,7 @@ func TestShouldNotCancelOrderWithNonPendingStatus(t *testing.T) {
 	columns := []string{"o_id", "o_status"}
 	// SETEXPECTTATIONS OMIT
 	mock.ExpectBegin() // HL12
-	mock.ExpectQuery("SELECT (.+) FROM orders AS o INNER JOIN users AS u (.+) FOR UPDATE"). // HL12
+	mock.ExpectQuery("SELECT (.+) FROM shopee.orders AS o INNER JOIN shopee.users AS u (.+) FOR UPDATE"). // HL12
 		WithArgs(1). // HL12
 		WillReturnRows(sqlmock.NewRows(columns).FromCSVString("1,1")) // HL12
 	mock.ExpectRollback() // HL12

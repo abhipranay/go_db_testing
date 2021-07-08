@@ -16,7 +16,7 @@ func TestShouldRollbackOnError(t *testing.T) {
 	defer db.Close()
 	mock.ExpectBegin() // HL12
 
-	mock.ExpectQuery("SELECT (.+) FROM orders AS o INNER JOIN users AS u (.+) FOR UPDATE"). // HL12
+	mock.ExpectQuery("SELECT (.+) FROM shopee.orders AS o INNER JOIN shopee.users AS u (.+) FOR UPDATE"). // HL12
 		WithArgs(1). // HL12
 		WillReturnError(fmt.Errorf("Some error")) // HL12
 

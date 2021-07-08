@@ -24,18 +24,18 @@ type Order struct {
 }
 
 func CancelOrder(id int, db *sql.DB) (err error) {
-	tx, err := db.Begin()
-	if err != nil {
-		return
-	}
-
 	var order Order
 	var user User
+
 	// SELECTQ OMIT
+	tx, err := db.Begin() // <-- tx start // HL12
+	if err != nil { // OMIT
+		return // OMIT
+	} // OMIT
 	sql := fmt.Sprintf(`
 SELECT %s, %s
-FROM orders AS o
-INNER JOIN users AS u ON o.buyer_id = u.id
+FROM shopee.orders AS o
+INNER JOIN shopee.users AS u ON o.buyer_id = u.id
 WHERE o.id = ?
 FOR UPDATE`,
 		sqlstruct.ColumnsAliased(order, "o"),
@@ -78,12 +78,12 @@ FOR UPDATE`,
 
 	// refund order value
 	// UPDATEQ OMIT
-	sql = "UPDATE users SET balance = balance + ? WHERE id = ?"
+	sql = "UPDATE shopee.users SET balance = balance + ? WHERE id = ?"
 	refundStmt, err := tx.Prepare(sql)
-	if err != nil {
-		tx.Rollback()
-		return
-	}
+	if err != nil { // OMIT
+		tx.Rollback() // OMIT
+		return // OMIT
+	} // OMIT
 	defer refundStmt.Close()
 	_, err = refundStmt.Exec(order.Value+order.ReservedFee, user.Id)
 	// ENDUPDATE OMIT
@@ -95,7 +95,7 @@ FOR UPDATE`,
 	// update order status
 	// CANCELLEDQ OMIT
 	order.Status = ORDER_CANCELLED
-	sql = "UPDATE orders SET status = ?, updated = NOW() WHERE id = ?"
+	sql = "UPDATE shopee.orders SET status = ?, updated = NOW() WHERE id = ?"
 	orderUpdStmt, err := tx.Prepare(sql)
 	// ENDCANCELLED OMIT
 	if err != nil {
@@ -111,3 +111,24 @@ FOR UPDATE`,
 	return tx.Commit()
 }
 
+func GetBalance(id int, db *sql.DB) (float64, error) {
+	var user User
+	sql := fmt.Sprintf(`
+SELECT %s
+FROM shopee.users
+WHERE id = ?
+`,
+		sqlstruct.Columns(User{}))
+	// fetch order to cancel
+	rows, err := db.Query(sql, id)
+	if err != nil {
+		return 0, err
+	}
+	rows.Next()
+	err = sqlstruct.Scan(&user, rows)
+	if err != nil {
+		return 0, err
+	}
+
+	return user.Balance, nil
+}

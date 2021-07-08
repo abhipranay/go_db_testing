@@ -108,4 +108,12 @@ Close TiDB server gracefully.
 * tidb-lite example ( continued...)
 .code tidb/ex1_test.go /^//START2/,/^//END2/ HL12
 
+* tidb-lite order Pending
+- User-10 balance -> 100 -> 210 ? Order pending can be cancelled
+- User-20 balance remains same ? Order non-pending
+.code tidb/orders_test.go /^//START/,/^//END/ HL12
+
+* tidb-lite order Non-Pending
+.code tidb/orders_test.go /^//START2/,/^//END2/ HL12
+
 * Q&A ?
